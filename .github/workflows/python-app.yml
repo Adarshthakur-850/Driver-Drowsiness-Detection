@@ -2,27 +2,23 @@ name: Python CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false
       matrix:
-        python-version:
-          - "3.10"
+        python-version: ["3.10"]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -31,10 +27,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake \
-            libgl1 \
-            libglib2.0-0
+          sudo apt-get install -y cmake libgl1 libglib2.0-0
 
       - name: Upgrade pip
         run: |
@@ -45,24 +38,18 @@ jobs:
           pip install flake8 pytest
           
           if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            echo "No requirements.txt found"
+            grep -v "playsound" requirements.txt > temp_requirements.txt
+            pip install -r temp_requirements.txt
           fi
 
-      - name: Run flake8 lint check
+      - name: Run flake8
         run: |
-          flake8 . \
-          --count \
-          --select=E9,F63,F7,F82 \
-          --show-source \
-          --statistics \
-          --exclude=.git,__pycache__,venv,env,models
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
       - name: Run tests
         run: |
-          if [ -d "tests" ]; then
+          if [ -d tests ]; then
             pytest tests/
           else
-            echo "No tests directory found. Skipping tests."
+            echo "No tests found"
           fi
